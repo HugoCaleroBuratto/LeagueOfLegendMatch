@@ -1,0 +1,87 @@
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science
+$ git init
+Initialized empty Git repository in C:/Users/herne/Desktop/Proyecto Data Science
+/.git/
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (master)
+$ touch README.md
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (master)
+$ git add -A
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (master)
+$ git commit -m "First Commit"
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (master)
+$ git remote add origin https://github.com/HugoCaleroBuratto/MortalityAroundWorld.git
+git branch -M main
+git push -u origin main
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (main)
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        HowWorksGit.jpg
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (main)
+$ git add HowWorksGit.jpg
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (main)
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        new file:   HowWorksGit.jpg
+
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (main)
+$ git commit -m "Add the image"
+[main 503736e] Add the image
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 HowWorksGit.jpg
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (main)
+$ git status
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+
+-- herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (main)
+$ git push
+Enumerating objects: 4, done.
+Counting objects: 100% (4/4), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 49.59 KiB | 16.53 MiB/s, done.
+Total 3 (delta 1), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+To https://github.com/HugoCaleroBuratto/MortalityAroundWorld.git
+   c832327..503736e  main -> main
+
+herne@DESKTOP-T1NGDKP MINGW64 ~/Desktop/Proyecto Data Science (main)
+$
+
+EN RESUMIDAS CUENTAS ES TODO UN CIRCULO, ES CICLICO TODO EL PROCESO QUE DEBEMOS HACER.
+- PRIMERO INICIAMOS EL PROCESO CON >> git init
+- LUEGO SE CREAR EL README.md con >> touch README.md 
+- AGREGAMOS TODO EL REPOSITORIO CON >> git add -A 
+- REALIZAMOS EL PRIMER commir con >> git commit -m "texto que dejaremos entre cada commit"
+- LO SUBIMOS A GITHUB 
+
+Ahora una ves que queremos seguir laburando sera similar...
+>>git init
+>> git status
+Con esto veremos el estado de nuestros datos, en caso de crear usaremos >> git add (nombrearchivo)
+>> git commit -m "Mensaje con segundas modificaciones"
+>> git push
+para subirlo al github y que se guarde TODO
