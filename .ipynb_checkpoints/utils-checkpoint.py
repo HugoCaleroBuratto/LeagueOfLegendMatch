@@ -122,3 +122,51 @@ def champions_information(version:str)->pd.DataFrame:
 
 ######################################################################################
 ######################################################################################
+
+# Definimos una funcion que nos traiga el id de las partidas que vamos a usar
+
+def historial_partidas(nombre_invocador:str)->list:
+    
+    # En base al nombre del invocador deberemos conectarnos a sus datos y obtener el puuid
+    puuid = list(datos_invocador([nombre_invocador])["puuid"])[0]
+    
+    # Definimos alguna variables
+    star_time = 1577880000
+    type = "ranked"
+    start = 0 
+    count = 100
+    match_ids = []
+    
+    # Creamos el bucle
+    # Hacer solicitudes GET a la API hasta que no haya más resultados disponibles
+    while True:
+        # Hacer solicitud GET a la API
+        response = requests.get(f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_time}&type={type}&start={start}&count={count}&api_key={key_admin}")
+
+        # Verificar si la solicitud fue exitosa
+        if response.status_code != 200:
+            print("Error al hacer la solicitud")
+            break
+        else:
+            # Obtener la lista de Id de partida a partir de la respuesta JSON
+            new_match_ids = response.json()
+
+            # Si no hay más resultados disponibles, salir del bucle
+            if len(new_match_ids) == 0:
+                break
+            else:
+                # Agregar los nuevos Id de partida a la lista
+                match_ids += new_match_ids
+
+                # Incrementar el valor de "start" para obtener los próximos resultados
+                start += count
+
+    # Ordenar la lista de Id de partida por fecha de manera ascendente
+    match_ids.sort(reverse=False)
+    
+    id_games = match_ids
+
+    return id_games
+
+######################################################################################
+######################################################################################
