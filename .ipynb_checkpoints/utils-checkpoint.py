@@ -43,7 +43,7 @@ def datos_invocador(nombres_invocador:list)->pd.DataFrame:
 
 def champions_mastery(nombres_invocador:list)->pd.DataFrame():
     
-    data_summoner = test #Aqui deberemos de nombrar la var igual que el df que almacene los datos de los jugadores
+    data_summoner = information #Aqui deberemos de nombrar la var igual que el df que almacene los datos de los jugadores
     
     # Definimos algunas variables
     key = key_admin
@@ -182,14 +182,14 @@ def detalle_partidas(id_partida:str)->pd.DataFrame:
     
     try:
         # Establecemos la coneccion con la api
-        reponse = requests.get(url)
+        response = requests.get(url)
         if response.status_code != 200:
             print(f"Error al obtener los datos de la partida {partida}.")
         else:
             None
 
         # Convertimos el json
-        json_info = json.loads(reponse.text)
+        json_info = json.loads(response.text)
 
         # Comenzamos a transformar el json en un df
         match_information = pd.DataFrame(json_info['info']['participants'])
