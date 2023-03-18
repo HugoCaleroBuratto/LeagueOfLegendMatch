@@ -91,6 +91,7 @@ def champions_mastery(nombres_invocador:list)->pd.DataFrame():
 
 def champions_information(version:str)->pd.DataFrame:
     
+    # version = 13.5.1
     # Definimos el url junto a nuestra version como variable 
     url_champions_information = f'http://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json'
     
@@ -131,8 +132,8 @@ def historial_partidas(nombre_invocador:str)->list:
     puuid = list(datos_invocador([nombre_invocador])["puuid"])[0]
     
     # Definimos alguna variables
-    star_time = 1577880000
-    type = "ranked"
+    start_time = 1577880000
+    type_game = "ranked"
     start = 0 
     count = 100
     match_ids = []
@@ -141,7 +142,7 @@ def historial_partidas(nombre_invocador:str)->list:
     # Hacer solicitudes GET a la API hasta que no haya más resultados disponibles
     while True:
         # Hacer solicitud GET a la API
-        response = requests.get(f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_time}&type={type}&start={start}&count={count}&api_key={key_admin}")
+        response = requests.get(f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={start_time}&type={type_game}&start={start}&count={count}&api_key={key_admin}")
 
         # Verificar si la solicitud fue exitosa
         if response.status_code != 200:
@@ -167,6 +168,128 @@ def historial_partidas(nombre_invocador:str)->list:
     id_games = match_ids
 
     return id_games
+
+######################################################################################
+######################################################################################
+
+### Eliminamos la columna que nos complica todco ###
+# Definimos una funcion que nos devuelva el detalle de nuestra partida en base al id de la misma
+
+def detalle_partidas(id_partida:str)->pd.DataFrame:
+    
+    # Establecemos una coneccion con la API para extraer los datos
+    url = f"https://americas.api.riotgames.com/lol/match/v5/matches/{id_partida}?api_key={key_admin}"
+    
+    try:
+        # Establecemos la coneccion con la api
+        reponse = requests.get(url)
+        if response.status_code != 200:
+            print(f"Error al obtener los datos de la partida {partida}.")
+        else:
+            None
+
+        # Convertimos el json
+        json_info = json.loads(reponse.text)
+
+        # Comenzamos a transformar el json en un df
+        match_information = pd.DataFrame(json_info['info']['participants'])
+        
+        # Reiniciamos el índice para evitar índices duplicados
+        match_information.reset_index(drop=True, inplace=True)
+
+        # Nos fijamos si existe la columna challenges
+        if 'challenges'in match_information.columns: 
+
+            # Desglozamos la columna que quedo como un diccionario
+            match_information.drop(['challenges'], axis=1, inplace = True)
+            
+        else:
+            None
+
+        # Eliminamos las columnas que no nos sirven
+        match_information.drop(['perks'], axis=1, inplace = True)
+
+        # Establecemos una columna con el nombre del id de la partida
+        match_information['id_game'] = id_partida
+        print(f"Se finalizo el proceso para la partida {id_partida}")
+
+        return match_information
+    
+    except Exception as e:
+        print(f"Error al obtener los datos de la partida {id_partida}: {e}")
+        return pd.DataFrame()
+
+######################################################################################
+######################################################################################
+
+# Creamos una funcion que actue como bucle for
+def detalle_partidas_lista(lista_partidas):
+    # Creamos un DataFrame vacío para ir almacenando los resultados
+    df_resultados = pd.DataFrame()
+    
+    # Iteramos sobre cada elemento de la lista
+    for partida in lista_partidas:
+        # Llamamos a la función detalle_partidas() para obtener el detalle de la partida actual
+        detalle_partida = detalle_partidas(partida).reset_index(drop=True)
+        
+        # Concatenamos el resultado al DataFrame de resultados
+        df_resultados = pd.concat([df_resultados, detalle_partida])
+    
+    # Devolvemos el DataFrame final con los detalles de todas las partidas
+    return df_resultados.reset_index()
+
+######################################################################################
+######################################################################################
+
+# Creamos una funcion que nos devuelva los detalles de challenges para aquellas partidas en donde exista.
+def detalle_challenge_partida(id_partidas: list[str]) -> pd.DataFrame:
+    # Definir un DataFrame vacío para almacenar la información de todas las partidas
+    df_todas_las_partidas = pd.DataFrame()
+    
+    # Establecemos la conexión a la API
+    for id_partida in id_partidas:
+        url = f"https://americas.api.riotgames.com/lol/match/v5/matches/{id_partida}?api_key={key_admin}"
+        try:
+            # Nos conectamos a la API
+            response = requests.get(url)
+            if response.status_code != 200:
+                print(f"Error al obtener los datos de la partida {id_partida}.")
+            else:
+                None
+
+            # Convertimos el json
+            json_info = json.loads(response.text)
+
+            # Comenzamos a transformar el json en un df
+            match_information = pd.DataFrame(json_info['info']['participants'])
+
+            # Reiniciamos el índice para evitar índices duplicados
+            match_information.reset_index(drop=True, inplace=True)
+
+            # Evaluamos la existencia de la columna challenge
+            if 'challenges' in match_information.columns:
+
+                # Desenglozamos los archivos
+                df_challenges = pd.json_normalize(match_information['challenges'])
+
+                # Le creamos la columna con el id de la partida
+                df_challenges['id_game'] = id_partida
+                df_challenges['summonerId'] = match_information['summonerId']
+
+            # En caso de no existir que no haga nada
+            else:
+                print(f"No se encontraron datos sobre la columna challenges para {id_partida}")
+                df_challenges = pd.DataFrame()
+
+            # Concatenar el DataFrame temporal con el DataFrame vacío
+            df_todas_las_partidas = pd.concat([df_todas_las_partidas, df_challenges], ignore_index=True)
+
+        except Exception as e:
+            # Que nos tire un error por no traer los datos
+            print(f"Error al obtener los datos de la partida {id_partida}: {e}")
+            
+    # Devolver el DataFrame que contiene la información de todas las partidas
+    return df_todas_las_partidas
 
 ######################################################################################
 ######################################################################################
