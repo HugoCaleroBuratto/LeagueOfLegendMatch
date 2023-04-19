@@ -80,7 +80,7 @@ pandocfilters @ file:///home/conda/feedstock_root/build_artifacts/pandocfilters_
 parso @ file:///home/conda/feedstock_root/build_artifacts/parso_1638334955874/work
 patsy==0.5.3
 pickleshare @ file:///home/conda/feedstock_root/build_artifacts/pickleshare_1602536217715/work
-Pillow==9.2.0
+Pillow==9.3.0
 pkgutil_resolve_name @ file:///home/conda/feedstock_root/build_artifacts/pkgutil-resolve-name_1633981968097/work
 platformdirs @ file:///home/conda/feedstock_root/build_artifacts/platformdirs_1657729053205/work
 plotly==5.13.1
