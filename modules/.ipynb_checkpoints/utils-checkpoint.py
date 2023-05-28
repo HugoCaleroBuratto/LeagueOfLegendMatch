@@ -1,22 +1,6 @@
 import pandas as pd
 import numpy as np
 import requests
-import json
-import requests
-
-# Para traer la api key
-import os
-from dotenv import load_dotenv
-
-# Importamos la api key
-# Obtén la ruta absoluta del archivo .env
-env_path = os.path.join(os.path.dirname(__file__), '..', 'conf', '.env')
-
-# Carga las variables de entorno desde el archivo .env
-load_dotenv(env_path)
-
-# Accede a la variable de entorno
-key_admin = os.getenv('key_admin')
 
 ######################################################################################
 ######################################################################################
@@ -313,48 +297,3 @@ def detalle_challenge_partida(id_partidas: list[str]) -> pd.DataFrame:
 
 ######################################################################################
 ######################################################################################
-
-# Creamos la funcion para que nos de los datos de la partida en viv
-    
-def live_match(nombre_jugador:str)->pd.DataFrame:
-    
-    #definimos algunas variables
-    key = key_admin
-    region = 'la2'
-        
-    # Creamos el df para almacenar los datos
-    df_match = pd.DataFrame()
-    
-    # Obtenemos el id del jugador
-    id = datos_invocador([nombre_jugador])['id'][0]
-    print(f'El id del jugador es: {id}')
-    
-    # Conexion a la API
-    url = f'https://{region}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{id}?api_key={key_admin}'
-    response = requests.get(url)
-    if response.status_code != 200:
-        print(f'Error al obtener datos de: {nombre_jugador}')
-        return None
-    
-    # Lo transformamos en texto 
-    texto = response.text
-    
-    # Lo transformamos en JSON y normalziamos con pd
-    json_info = json.loads(texto)
-    df_match = pd.json_normalize(json_info)
-    
-    print(f'Se finalizo el proceso para la partida de {nombre_jugador}')
-    
-        # Creamos el df vacio
-    detalle_partida = pd.DataFrame()
-
-    # Creamos el bucle para normalizar cada JSON    
-    for i in range(0,10,1):
-        
-        # Normalizamos cada jugador
-        player_normalize = pd.json_normalize(pd.json_normalize(df_match['participants'])[i])
-        
-        # Guardamos los datos
-        detalle_partida = pd.concat([detalle_partida, player_normalize])
-
-    return detalle_partida
