@@ -314,6 +314,20 @@ def detalle_challenge_partida(id_partidas: list[str]) -> pd.DataFrame:
 ######################################################################################
 ######################################################################################
 
+# Definimos algunos datos que vamos a definir para trabajar
+def historial_del_jugador(nombre_jugador:str)->pd.DataFrame:
+    # Extraemos el id del jugador
+    id_del_jugador = df_games[df_games['summonerName'] == nombre_jugador]['summonerId'].unique().item()
+    
+    # Ahora con el id nos quedamos unicamente con las partidas que deseamos
+    historial_partidas = df_games[df_games['summonerId'] == id_del_jugador]
+    
+    return historial_partidas
+
+
+######################################################################################
+######################################################################################
+
 # Creamos la funcion para que nos de los datos de la partida en viv
     
 def live_match(nombre_jugador:str)->pd.DataFrame:
