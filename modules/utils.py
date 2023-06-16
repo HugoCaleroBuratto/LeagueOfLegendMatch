@@ -3,6 +3,7 @@ import numpy as np
 import requests
 import json
 import requests
+import warnings as wn
 
 # Para traer la api key
 import os
@@ -63,8 +64,7 @@ def datos_invocador(nombres_invocador:list)->pd.DataFrame:
 
 def champions_mastery(nombres_invocador:list)->pd.DataFrame():
     
-    data_summoner = information #Aqui deberemos de nombrar la var igual que el df que almacene los datos de los jugadores
-    
+       
     # Definimos algunas variables
     key = key_admin
     region = 'LA2'
@@ -72,8 +72,11 @@ def champions_mastery(nombres_invocador:list)->pd.DataFrame():
     # Creamos un dataframe vacio
     df_summoner_mastery = pd.DataFrame()
     
+    # Generamos un df con los datos de los invocadores
+    invocadores_info = datos_invocador(nombres_invocador)
+    
     # Tenemos que obtener el id del dataframe obtenido anteriormente en base al nombre que ingresemos
-    summoners_id = data_summoner[data_summoner['name'] == nombres_invocador]['id']
+    summoners_id =  invocadores_info[invocadores_info['name'] == nombres_invocador]['id']
     
     # Creamos un bucle for para que tome todos los nombre que indiquemos
     for summoner_id in summoners_id:
@@ -98,9 +101,10 @@ def champions_mastery(nombres_invocador:list)->pd.DataFrame():
 
         print(f'Se finalizo el proceso de transformacion para {summoner_id}.')
         
-    # Trabajamos los datos para que nos traiga como columna tambien el nombre del invocador
-    df_summoner_mastery.rename(columns={'summonerId':'id'}, inplace = True)
-    df_summoner_mastery = df_summoner_mastery.merge(data_summoner[['name', 'id']], on='id', how='left')
+    # Eliminaremos las columnas que no sean necesarias
+    colstodrop = ['puuid', 'lastPlayTime', 'championPointsSinceLastLevel', 'championPointsUntilNextLevel',
+                  'chestGranted', 'tokensEarned']
+    df_summoner_mastery.drop(columns=colstodrop)
     
     return df_summoner_mastery
 
@@ -372,3 +376,191 @@ def live_match(nombre_jugador:str)->pd.DataFrame:
         detalle_partida = pd.concat([detalle_partida, player_normalize])
 
     return detalle_partida
+
+######################################################################################
+######################################################################################
+
+def detalle_partidas_for_train(id_partida:str)->pd.DataFrame:
+    
+    # Establecemos una coneccion con la API para extraer los datos
+    url = f"https://americas.api.riotgames.com/lol/match/v5/matches/{id_partida}?api_key={key_admin}"
+    region = 'LA2'
+    
+    try:
+        # Establecemos la coneccion con la api
+        response = requests.get(url)
+        if response.status_code != 200:
+            print(f"Error al obtener los datos de la partida {id_partida}.")
+        else:
+            None
+
+        # Convertimos el json
+        json_info = json.loads(response.text)
+
+        # Comenzamos a transformar el json en un df
+        match_information = pd.DataFrame(json_info['info']['participants'])
+        
+        # Reiniciamos el índice para evitar índices duplicados
+        match_information.reset_index(drop=True, inplace=True)
+
+        # Nos fijamos si existe la columna challenges
+        if 'challenges'in match_information.columns: 
+
+            # Desglozamos la columna que quedo como un diccionario
+            match_information.drop(['challenges'], axis=1, inplace = True)
+            
+        else:
+            None
+
+        # # Eliminamos las columnas que no nos sirven
+        # match_information.drop(['perks'], axis=1, inplace = True)
+
+        # Establecemos una columna con el nombre del id de la partida
+        match_information['id_game'] = id_partida
+        print(f"Se finalizo el proceso para la partida {id_partida}")
+        
+        # Establecemos que A sea el df hasta el momento
+        A = match_information
+        
+        # Eliminamos los warnings
+        wn.filterwarnings('ignore')
+
+        # Nos quedamos unicamente con las columnas que nos importan para entrenar
+        information_to_train = A[['teamId', 'summonerId', 'championId', 'win']]
+        information_to_train['perks_defense'] = pd.json_normalize(A['perks'])['statPerks.defense']
+        information_to_train['perks_flex'] = pd.json_normalize(A['perks'])['statPerks.flex']
+        information_to_train['perks_offense'] = pd.json_normalize(A['perks'])['statPerks.offense']
+        information_to_train['subStyle'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['style']
+        information_to_train['primaryStyle'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['style']
+        information_to_train['primary1perk'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[0])['perk']
+        # information_to_train['primary1var1'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[0])['var1']
+        # information_to_train['primary1var2'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[0])['var2']
+        # information_to_train['primary1var3'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[0])['var3']
+        information_to_train['primary2perk'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[1])['perk']
+        # information_to_train['primary2var1'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[1])['var1']
+        # information_to_train['primary2var2'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[1])['var2']
+        # information_to_train['primary2var3'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[0])['selections'])[1])['var3']
+        information_to_train['sub1perk'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[0])['perk']
+        # information_to_train['sub1var1'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[0])['var1']
+        # information_to_train['sub1var2'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[0])['var2']
+        # information_to_train['sub1var3'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[0])['var3']
+        information_to_train['sub2perk'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[1])['perk']
+        # information_to_train['sub2var1'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[1])['var1']
+        # information_to_train['sub2var2'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[1])['var2']
+        # information_to_train['sub2var3'] = pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(pd.json_normalize(A['perks'])['styles'])[1])['selections'])[1])['var3']
+        
+        ## Creamos la columna en donde esten los id de los campeones enemigos
+        # Seleccionamos los campeones de cada equipo
+        champions_team1 = information_to_train[information_to_train['teamId'] == 100]['championId']
+        champions_team2 = information_to_train[information_to_train['teamId'] == 200]['championId']
+        
+        # Agrega la columna con los campeones enemigos
+        information_to_train['enemy_champ_team'] = information_to_train.apply(lambda row: champions_team2.tolist() if row['teamId'] == 100 else champions_team1.tolist(), axis=1)
+
+        # Tenemos que obtener el id del dataframe obtenido anteriormente en base al nombre que ingresemos
+        summoners_id =  information_to_train['summonerId']
+        df_summoner_mastery=pd.DataFrame()
+        
+        # Creamos un bucle for para que tome todos los nombre que indiquemos
+        for summoner_id in summoners_id:
+        
+            # Nos conectamos a la api para obtener los datos
+            api_for_mastery = f'https://{region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{summoner_id}?api_key={key_admin}'
+
+            response = requests.get(api_for_mastery)
+            if response.status_code != 200:
+                print(f"Error: no se pudo obtener la maestría de campeones del invocador {summoner_id}.")
+                return None
+
+            # Lo transformamos en un texto
+            texto = response.text
+
+            # Lo transformamos en un JSON y lo normalizamos en un pd.df
+            json_info = json.loads(texto)
+            mastery_information = pd.json_normalize(json_info)
+
+            # Almacenamos los datos
+            df_summoner_mastery = pd.concat([df_summoner_mastery, mastery_information], ignore_index=True)
+
+            print(f'Se finalizo el proceso de transformacion para {summoner_id}.')
+            
+        # Eliminaremos las columnas que no sean necesarias
+        colstodrop = ['puuid', 'lastPlayTime', 'championPointsSinceLastLevel', 'championPointsUntilNextLevel',
+                    'chestGranted', 'tokensEarned']
+        df_summoner_mastery.drop(columns=colstodrop, inplace=True)
+        
+        # Realizamos un merge entre ambos df para obtener los datos de maestria y puntos de campeon
+        information_to_train02 = pd.merge(information_to_train, df_summoner_mastery, how='inner', on=['summonerId', 'championId'])
+        
+        print(f"Se finalizo la informacion de los jugadores")
+        
+        ## Ahora buscamos la informacion de los campeones para el parche que estableceremos
+        # Definimos el url junto a nuestra version como variable 
+        version = '13.12.1'
+        # Definimos el url junto a nuestra version como variable 
+        url_champions_information = f'http://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json'
+        
+        # Nos conectamos a la api para obtener los datos
+        response = requests.get(url_champions_information) 
+        if response.status_code != 200:
+            print("Error: no se puedo conectar correctamente a la api, controlar version del juego")
+            return None
+        
+        # Lo transformamos en un texto
+        texto = response.text
+        
+        # Lo transformamos en un json y comenzamos a extraer los distintos datos
+        json_info = json.loads(texto)
+        
+        # Convertimos los diccionarios anidados de "info" y "stats" en columnas separadas
+        champions_data = []
+        for champion_id, champion_data in json_info["data"].items():
+            champion_data["id"] = champion_id
+            champion_data.update(champion_data.pop("stats"))
+            champion_data.update(champion_data.pop("info"))
+            champions_data.append(champion_data)
+
+        # Creamos el DataFrame
+        champions_data = pd.DataFrame(champions_data)
+        champions_data.drop(columns=["image", "version", "id", "name", "title", "blurb"], inplace=True)
+        champions_data.rename(columns={'key':'championId'}, inplace=True)
+        
+        # transformamos la col a joiner en el mismo tipo
+        champions_data['championId'] = champions_data['championId'].astype('int64')
+        
+        dataset_to_train = information_to_train02.merge(champions_data, on='championId', how='inner')
+        
+        print(f"Se finalizo todo el proceso para la partida {id_partida}")
+
+        return dataset_to_train
+    
+    except Exception as e:
+        print(f"Error al obtener los datos de la partida {id_partida}: {e}")
+        return pd.DataFrame()
+    
+######################################################################################
+######################################################################################
+
+# Creamos una funcion que actue como bucle for
+def detalle_partidas_lista_for_train(lista_partidas):
+    # Creamos un DataFrame vacío para ir almacenando los resultados
+    df_resultados = pd.DataFrame()
+    
+    # Iteramos sobre cada elemento de la lista
+    for partida in lista_partidas:
+        
+        try:
+            # Llamamos a la función detalle_partidas() para obtener el detalle de la partida actual
+            detalle_partida = detalle_partidas_for_train(partida).reset_index(drop=True)
+            
+            # Concatenamos el resultado al DataFrame de resultados
+            df_resultados = pd.concat([df_resultados, detalle_partida])
+            
+        except Exception as e:
+            print(f"Error al obtener los detalles de la partida {partida}: {str(e)}")
+            continue
+        
+    print("Se finalizo todo el proceso de creacion del df para entrenar el modelo.")
+
+    # Devolvemos el DataFrame final con los detalles de todas las partidas
+    return df_resultados.reset_index()
